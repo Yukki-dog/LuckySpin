@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Колесо фортуны</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 5px;
+    }
+    canvas {
+      margin-top: 20px;
+      border: 2px solid #333;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎡 Колесо фортуны</h1>
+
+  <label>Сколько ячеек? 
+    <input type="number" id="cellCount" min="1" placeholder="Напр. 4">
+  </label>
+
+  <br><br>
+
+  <label>Загрузите изображения: 
+    <input type="file" id="imageInput" accept="image/*" multiple>
+  </label>
+
+  <br><br>
+
+  <button onclick="generateWheel()">Создать колесо</button>
+
+  <canvas id="wheelCanvas" width="400" height="400"></canvas>
+
+  <script>
+    function generateWheel() {
+      const cellCountInput = document.getElementById('cellCount');
+      const fileInput = document.getElementById('imageInput');
+      const cellCount = parseInt(cellCountInput.value);
+      const files = Array.from(fileInput.files);
+
+      if (isNaN(cellCount) || cellCount < 1) {
+        alert("Введите корректное число ячеек (целое число больше 0).");
+        return;
+      }
+
+      if (files.length !== cellCount) {
+        alert(`Вы загрузили ${files.length} изображений, а указали ${cellCount} ячеек!`);
+        return;
+      }
+
+      const canvas = document.getElementById('wheelCanvas');
+      const ctx = canvas.getContext('2d');
+      const radius = canvas.width / 2;
+      const centerX = radius;
+      const centerY = radius;
+      const angleStep = (2 * Math.PI) / cellCount;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      files.forEach((file, i) => {
+        const angle = i * angleStep;
+        const img = new Image();
+        img.onload = () => {
+          ctx.save();
+          ctx.translate(centerX, centerY);
+          ctx.rotate(angle + angleStep / 2);
+          ctx.drawImage(img, radius / 4, -40, 80, 80);
+          ctx.restore();
+
+          // Сектор
+          ctx.beginPath();
+          ctx.moveTo(centerX, centerY);
+          ctx.arc(centerX, centerY, radius, angle, angle + angleStep);
+          ctx.closePath();
+          ctx.stroke();
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    // Только цифры
+    document.getElementById('cellCount').addEventListener('keypress', function (e) {
+      if (!/[0-9]/.test(e.key)) {
+        e.preventDefault();
+      }
+    });
+  </script>
+
+</body>
+</html>
