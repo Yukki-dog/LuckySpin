@@ -1,98 +1,555 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Колесо фортуны</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    input[type="number"] {
-      width: 80px;
-      padding: 5px;
-    }
-    canvas {
-      margin-top: 20px;
-      border: 2px solid #333;
-      border-radius: 50%;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>LuckySpin</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap');
+
+  :root {
+    --bg: #fefefe;
+    --text: #222;
+    --btn-bg: #f0f0f0;
+    --btn-text: #222;
+    --btn-shadow: rgba(0,0,0,0.1);
+    --input-bg: #fff;
+    --input-text: #222;
+    --border-color: #ddd;
+    --canvas-bg: #fff;
+    --shadow-elevate: 0 8px 12px rgba(0,0,0,0.1);
+    --arrow-color: #444;
+  }
+
+  body.dark {
+    --bg: #181818;
+    --text: #ddd;
+    --btn-bg: #2a2a2a;
+    --btn-text: #ddd;
+    --btn-shadow: rgba(255,255,255,0.1);
+    --input-bg: #222;
+    --input-text: #eee;
+    --border-color: #444;
+    --canvas-bg: #222;
+    --shadow-elevate: 0 8px 12px rgba(0,0,0,0.7);
+    --arrow-color: #bbb;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: background 0.5s, color 0.5s;
+    user-select: none;
+  }
+
+  h1 {
+    font-weight: 700;
+    font-size: 2.4rem;
+    margin: 0 0 12px 0;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+  }
+
+  input, textarea {
+    width: 320px;
+    max-width: 90vw;
+    padding: 12px 15px;
+    margin: 8px 0;
+    font-size: 1.1rem;
+    border-radius: 14px;
+    border: 1.8px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--input-text);
+    box-shadow: inset 0 4px 7px rgba(0,0,0,0.05);
+    transition: background 0.4s, color 0.4s, border-color 0.4s;
+    resize: vertical;
+    font-weight: 500;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #6a8efb;
+    box-shadow: 0 0 8px #6a8efbaa;
+  }
+
+  button {
+    margin: 10px 7px 0 7px;
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 16px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 4px 10px var(--btn-shadow);
+    transition:
+      background-color 0.35s ease,
+      color 0.35s ease,
+      box-shadow 0.35s ease,
+      transform 0.15s ease;
+    user-select: none;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  button:hover {
+    background-color: #6a8efb;
+    color: white;
+    box-shadow: 0 6px 15px #4c6ef5cc;
+    transform: translateY(-3px);
+  }
+
+  button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px #4c6ef599;
+  }
+
+  #wheelCanvas {
+    margin-top: 25px;
+    border-radius: 50%;
+    background: var(--canvas-bg);
+    border: 5px solid var(--border-color);
+    box-shadow: var(--shadow-elevate);
+    cursor: pointer;
+    transition: background 0.5s, border-color 0.5s;
+    width: 400px;
+    height: 400px;
+    display: block;
+    position: relative;
+  }
+
+  #wheelTitleDisplay {
+    font-family: 'Dancing Script', cursive;
+    font-size: 2rem;
+    margin-top: 30px; /* чуть ниже */
+    text-align: center;
+    color: var(--text);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    user-select: none;
+    min-height: 48px;
+  }
+
+  #winnerPreview {
+    margin-top: 30px;
+    text-align: center;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  #winnerPreview.visible {
+    display: block;
+    opacity: 1;
+  }
+
+  #winnerPreview h2 {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+  }
+
+  #winnerPreview img {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    border: 5px solid gold;
+    margin-bottom: 12px;
+    transition: box-shadow 0.3s ease;
+  }
+
+  #winnerPreview p {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-shadow: 0 0 2px rgba(0,0,0,0.1);
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border-radius: 20px;
+    box-shadow: 0 5px 12px var(--btn-shadow);
+    border: none;
+    padding: 10px 18px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    font-weight: 600;
+    user-select: none;
+    transition: background-color 0.4s, color 0.4s, box-shadow 0.4s;
+    z-index: 10;
+  }
+  .theme-toggle:hover {
+    background-color: #6a8efb;
+    color: white;
+    box-shadow: 0 8px 18px #4c6ef5cc;
+  }
+</style>
 </head>
 <body>
 
-  <h1>🎡 Колесо фортуны</h1>
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Сменить тему">🌞</button>
 
-  <label>Сколько ячеек? 
-    <input type="number" id="cellCount" min="1" placeholder="Напр. 4">
-  </label>
+<h1>🎡 LuckySpin</h1>
 
-  <br><br>
+<input type="text" id="wheelTitle" placeholder="Название колеса" aria-label="Название колеса" />
+<input type="number" id="cellCount" placeholder="Сколько ячеек?" min="1" aria-label="Количество ячеек" />
+<input type="file" id="imageInput" accept="image/*" multiple aria-label="Загрузить фотографии" />
+<textarea id="nameInput" placeholder="Или введите имена, по одному в строке (пустая строка — разделитель)" rows="5" aria-label="Имена ячеек"></textarea>
 
-  <label>Загрузите изображения: 
-    <input type="file" id="imageInput" accept="image/*" multiple>
-  </label>
-
-  <br><br>
-
+<div>
   <button onclick="generateWheel()">Создать колесо</button>
+  <button onclick="spinWheel()">🔄 Крутить!</button>
+  <button onclick="startRecording()" id="recordBtn">🎥 Запись видео</button>
+  <button onclick="resetWheel()">🧹 Сбросить</button>
+  <button onclick="downloadRecording()" id="downloadBtn" style="display:none;">⬇ Скачать видео</button>
+</div>
 
-  <canvas id="wheelCanvas" width="400" height="400"></canvas>
+<div style="position: relative; width: 400px; height: 400px; margin-top: 25px;">
+  <canvas id="wheelCanvas" width="400" height="400" aria-label="Колесо фортуны"></canvas>
+  <!-- Стрелка -->
+  <canvas id="arrowCanvas" width="400" height="400" style="position: absolute; top: 0; left: 0; pointer-events:none;"></canvas>
+</div>
 
-  <script>
-    function generateWheel() {
-      const cellCountInput = document.getElementById('cellCount');
-      const fileInput = document.getElementById('imageInput');
-      const cellCount = parseInt(cellCountInput.value);
-      const files = Array.from(fileInput.files);
+<div id="wheelTitleDisplay"></div>
 
-      if (isNaN(cellCount) || cellCount < 1) {
-        alert("Введите корректное число ячеек (целое число больше 0).");
-        return;
-      }
+<div id="winnerPreview" role="alert" aria-live="polite">
+  <h2 id="winnerTitle"></h2>
+  <img id="winnerImage" alt="Победитель" />
+  <p id="winnerName"></p>
+</div>
 
-      if (files.length !== cellCount) {
-        alert(`Вы загрузили ${files.length} изображений, а указали ${cellCount} ячеек!`);
-        return;
-      }
+<script>
+  const wheelCanvas = document.getElementById('wheelCanvas');
+  const arrowCanvas = document.getElementById('arrowCanvas');
+  const ctx = wheelCanvas.getContext('2d');
+  const arrowCtx = arrowCanvas.getContext('2d');
 
-      const canvas = document.getElementById('wheelCanvas');
-      const ctx = canvas.getContext('2d');
-      const radius = canvas.width / 2;
-      const centerX = radius;
-      const centerY = radius;
-      const angleStep = (2 * Math.PI) / cellCount;
+  const centerX = wheelCanvas.width / 2;
+  const centerY = wheelCanvas.height / 2;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let wheelData = {
+    count: 0,
+    angle: 0,
+    title: "",
+    imageObjects: [],
+    names: [],
+    colors: [],
+  };
 
-      files.forEach((file, i) => {
-        const angle = i * angleStep;
-        const img = new Image();
-        img.onload = () => {
-          ctx.save();
-          ctx.translate(centerX, centerY);
-          ctx.rotate(angle + angleStep / 2);
-          ctx.drawImage(img, radius / 4, -40, 80, 80);
-          ctx.restore();
+  let spinSpeed = 0;
+  let spinning = false;
+  let mediaRecorder;
+  let recordedChunks = [];
 
-          // Сектор
-          ctx.beginPath();
-          ctx.moveTo(centerX, centerY);
-          ctx.arc(centerX, centerY, radius, angle, angle + angleStep);
-          ctx.closePath();
-          ctx.stroke();
-        };
-        img.src = URL.createObjectURL(file);
-      });
+  const maxSpinSpeed = 0.5;  // ограничение скорости
+  const accelerationStep = 0.15; // сколько прибавляет при каждом нажатии
+
+  function getRandomColor() {
+    const isDark = document.body.classList.contains("dark");
+    const lightColors = ["#FFD700", "#FF69B4", "#87CEFA", "#90EE90", "#FFA07A", "#9370DB", "#00CED1"];
+    const darkColors = ["#8B4513", "#556B2F", "#2F4F4F", "#483D8B", "#800000", "#708090"];
+    const palette = isDark ? darkColors : lightColors;
+    return palette[Math.floor(Math.random() * palette.length)];
+  }
+
+  function getValidNameList(text) {
+    return text
+      .split(/\n+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
+
+  function generateWheel() {
+    const count = parseInt(document.getElementById("cellCount").value);
+    const files = Array.from(document.getElementById("imageInput").files);
+    const nameListRaw = document.getElementById("nameInput").value;
+    const nameList = getValidNameList(nameListRaw);
+
+    if (isNaN(count) || count < 1) return alert("Введите число ячеек.");
+
+    if (files.length) {
+      if (files.length !== count)
+        return alert(`Вы указали ${count} ячеек, а файлов загружено: ${files.length}. Пожалуйста, исправьте.`);
+    } else {
+      if (nameList.length !== count)
+        return alert(`Вы указали ${count} ячеек, а введено имен: ${nameList.length}. Пожалуйста, исправьте.`);
     }
 
-    // Только цифры
-    document.getElementById('cellCount').addEventListener('keypress', function (e) {
-      if (!/[0-9]/.test(e.key)) {
-        e.preventDefault();
-      }
+    wheelData.count = count;
+    wheelData.title = document.getElementById("wheelTitle").value.trim();
+    wheelData.angle = 0;
+    wheelData.colors = Array.from({ length: count }, () => getRandomColor());
+
+    wheelData.imageObjects = files.map(f => {
+      const img = new Image();
+      img.src = URL.createObjectURL(f);
+      return img;
     });
-  </script>
+
+    wheelData.names = nameList;
+
+    document.getElementById("winnerPreview").classList.remove("visible");
+    document.getElementById("wheelTitleDisplay").textContent = wheelData.title;
+    drawWheel();
+    drawArrow();
+  }
+
+  function drawWheel() {
+    const { count, imageObjects, angle, colors, names } = wheelData;
+    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+    if (count === 0) return;
+
+    const radius = wheelCanvas.width / 2;
+    const angleStep = (2 * Math.PI) / count;
+
+    for (let i = 0; i < count; i++) {
+      const start = angle + i * angleStep;
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, radius, start, start + angleStep);
+      ctx.closePath();
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Надписи и изображения
+      const mid = start + angleStep / 2;
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(mid);
+
+      if (imageObjects[i] && imageObjects[i].complete) {
+        const imgSize = radius / 3;
+        ctx.drawImage(imageObjects[i], imgSize / 3, -imgSize / 3, imgSize, imgSize);
+      } else if (names[i]) {
+        ctx.fillStyle = document.body.classList.contains('dark') ? '#ddd' : '#222';
+        ctx.font = "bold 15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        ctx.textAlign = "left";
+        // Автоуменьшение размера шрифта для длинных имён
+        let fontSize = 15;
+        while (ctx.measureText(names[i]).width > radius / 2.2 && fontSize > 9) {
+          fontSize--;
+          ctx.font = `bold ${fontSize}px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif`;
+        }
+        ctx.fillText(names[i], radius / 3, 8);
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawArrow(jiggle = 0) {
+  arrowCtx.clearRect(0, 0, arrowCanvas.width, arrowCanvas.height);
+
+  const color = getComputedStyle(document.body).getPropertyValue('--arrow-color').trim();
+  const shadowColor = document.body.classList.contains('dark') ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.2)';
+
+  arrowCtx.save();
+  // Смещение вниз для красивой позиции стрелки:
+  arrowCtx.translate(centerX, centerY + 70);
+  arrowCtx.rotate(jiggle);
+  arrowCtx.beginPath();
+
+  // Немного уменьшил высоту стрелки (с 140 до 100)
+  arrowCtx.moveTo(0, -100);
+  arrowCtx.lineTo(-25, -60);
+  arrowCtx.lineTo(-10, -60);
+  arrowCtx.lineTo(-10, -20);
+  arrowCtx.lineTo(10, -20);
+  arrowCtx.lineTo(10, -60);
+  arrowCtx.lineTo(25, -60);
+  arrowCtx.closePath();
+
+  arrowCtx.fillStyle = color;
+  arrowCtx.shadowColor = shadowColor;
+  arrowCtx.shadowBlur = 6;
+  arrowCtx.shadowOffsetX = 2;
+  arrowCtx.shadowOffsetY = 2;
+  arrowCtx.fill();
+  arrowCtx.restore();
+}
+
+
+  function spinWheel() {
+    if (!wheelData.count) {
+      alert("Сначала создайте колесо!");
+      return;
+    }
+    // Если уже крутится — увеличиваем скорость плавно, с лимитом
+    if (spinning) {
+      spinSpeed = Math.min(spinSpeed + accelerationStep, maxSpinSpeed);
+      return;
+    }
+    spinSpeed = Math.random() * 0.2 + 0.3;
+    spinning = true;
+    animateSpin();
+  }
+
+  let jiggleAmount = 0;
+  let jiggleDir = 1;
+
+  function animateSpin() {
+    if (!spinning) return;
+    wheelData.angle += spinSpeed;
+    spinSpeed *= 0.97;
+
+    drawWheel();
+
+    // Стрелка дергается, когда скорость близка к 0 (остановка)
+    if (spinSpeed < 0.005) {
+      spinSpeed = 0;
+      spinning = false;
+      jiggleAmount = 0;
+      drawArrow(0);
+
+      const normalizedAngle = (2 * Math.PI - (wheelData.angle % (2 * Math.PI))) % (2 * Math.PI);
+      const index = Math.floor(normalizedAngle / ((2 * Math.PI) / wheelData.count));
+
+      setTimeout(() => {
+        showWinner(index);
+        confetti({ spread: 90, particleCount: 120, origin: { y: 0.4 } });
+        tickSound();
+        animateJiggle();
+      }, 200);
+      return;
+    }
+
+    drawArrow(0);
+    requestAnimationFrame(animateSpin);
+  }
+
+  function animateJiggle() {
+    if (jiggleAmount > 0.05) jiggleDir = -1;
+    if (jiggleAmount < -0.05) jiggleDir = 1;
+    jiggleAmount += 0.002 * jiggleDir;
+
+    drawArrow(jiggleAmount);
+
+    if (!spinning && Math.abs(jiggleAmount) > 0.04) {
+      setTimeout(animateJiggle, 50);
+    } else {
+      drawArrow(0);
+    }
+  }
+
+  function showWinner(index) {
+    const box = document.getElementById("winnerPreview");
+    const title = document.getElementById("winnerTitle");
+    const img = document.getElementById("winnerImage");
+    const name = document.getElementById("winnerName");
+
+    title.textContent = `🎉 Победил сектор №${index + 1}`;
+    if (wheelData.imageObjects[index]) {
+      img.src = wheelData.imageObjects[index].src;
+      img.style.display = "inline-block";
+      name.textContent = "";
+    } else {
+      img.style.display = "none";
+      name.textContent = wheelData.names[index];
+    }
+
+    box.classList.add("visible");
+  }
+
+  // Звук щелчка при остановке
+  function tickSound() {
+    try {
+      const ctx = new AudioContext();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.type = "square";
+      o.frequency.setValueAtTime(800, ctx.currentTime);
+      g.gain.setValueAtTime(0.1, ctx.currentTime);
+      o.start();
+      o.stop(ctx.currentTime + 0.05);
+    } catch(e) {}
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle("dark");
+    generateWheel();
+  }
+
+  function startRecording() {
+    const recordBtn = document.getElementById("recordBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      recordBtn.textContent = "🎥 Запись видео";
+      alert("🛑 Запись остановлена. Можете скачать видео.");
+      return;
+    }
+
+    const stream = wheelCanvas.captureStream(30);
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+    recordedChunks = [];
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      downloadBtn.style.display = "inline-block";
+    };
+
+    mediaRecorder.start();
+    recordBtn.textContent = "⏹ Остановить запись";
+    downloadBtn.style.display = "none";
+    alert("🔴 Запись началась. Нажмите снова для остановки.");
+  }
+
+  function downloadRecording() {
+    if (recordedChunks.length === 0) {
+      alert("Нет записанных данных для скачивания.");
+      return;
+    }
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "luckspin_recording.webm";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetWheel() {
+    wheelData = {
+      count: 0,
+      angle: 0,
+      title: "",
+      imageObjects: [],
+      names: [],
+      colors: [],
+    };
+    spinSpeed = 0;
+    spinning = false;
+    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+    arrowCtx.clearRect(0, 0, arrowCanvas.width, arrowCanvas.height);
+    document.getElementById("wheelTitleDisplay").textContent = "";
+    document.getElementById("winnerPreview").classList.remove("visible");
+    document.getElementById("imageInput").value = "";
+    document.getElementById("nameInput").value = "";
+    document.getElementById("cellCount").value = "";
+    document.getElementById("wheelTitle").value = "";
+  }
+</script>
 
 </body>
 </html>
